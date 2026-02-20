@@ -1,0 +1,64 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ApiGateway
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/users/**
+
+        - id: account-service
+          uri: ${ACCOUNT_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/accounts/**
+
+        - id: transaction-service
+          uri: ${TRANSACTION_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/transactions/**
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+gateway:
+  jwt:
+    cache-ttl-minutes: 10
+
+  user-service-url: ${USER_SERVICE_URL:http://localhost:8081}
+
+  open-endpoints:
+    - /api/v1/users/register
+    - /api/v1/users/login
+    - /api/v1/users/refresh
+
+logging:
+  level:
+    tamarilt.apigateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
